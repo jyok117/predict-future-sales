@@ -1,0 +1,252 @@
+```{r}
+library(tidyverse)   
+
+library(tidyr) 
+library(tidyselect)
+library(plotly)
+library(dplyr)
+library(reactable)
+library(htmlwidgets)
+library('IRdisplay')
+```
+
+```{r}
+# REMOVE MISSING VALUES
+item_categories<-drop_na(item_categories)
+
+items<-drop_na(items)
+
+sales_train<-drop_na(sales_train)
+
+shops<-drop_na(shops)
+
+test<-drop_na(test)
+
+head(item_categories)
+
+head(items)
+
+head(sales_train)
+head(shops)
+
+head(test)
+```
+
+```{r}
+#MERGE TABLES
+sales_data<-sales_train%>%left_join(items, by="item_id")%>%left_join(shops, by="shop_id")%>%left_join(item_categories, by="item_category_id")
+
+head(sales_data)
+```
+
+```{r}
+# DIMENSIONS OF THE DATA FRAME
+
+dim(sales_data)
+```
+
+```{r}
+# FEATURES OF DATA
+names(sales_data)
+```
+
+```{r}
+# EXTRACTION OF DATE , MONTH AND YEAR
+sales_data$date <-as.Date(sales_data$date,"%d.%m.%Y")
+
+sales_data$Year<-as.numeric(format(sales_data$date,"%Y"))
+sales_data$Month<-as.numeric(format(sales_data$date,"%m"))
+sales_data$Day<-as.numeric(format(sales_data$date,"%d"))
+
+head(sales_data)
+```
+
+```{r}
+# TOTAL PRODUCT SOLD PER YEAR
+product_sold_Year<-sales_data%>%group_by(Year)%>%summarise(Product_sold_year=sum(item_cnt_day))
+
+product_sold_Year
+
+plot_ly(product_sold_Year, x=~Year, y=~Product_sold_year, color = ~Year, colors = c("#4C3A51","#774360","#B25068"), type='bar')%>%layout(title='Total Product Sold Per Year', yaxis=list(title='Total Item Sold'))
+
+```
+
+```{r}
+# TOTAL PRODUCT SOLD PER MONTH
+product_sold_Month<-sales_data%>%group_by(Month)%>%summarise(Product_sold_Month=sum(item_cnt_day))
+
+head(product_sold_Month)
+plot_ly(product_sold_Month, y=~Product_sold_Month, x=~Month,  type='scatter', mode='lines+markers')%>%layout(title='Total Product Sold Per Months', yaxis=list(title='Total Item Sold'))
+
+```
+
+```{r}
+# TOTAL PRODUCT SOLD PER DAY
+product_sold_Day<-sales_data%>%group_by(Day)%>%summarise(Product_sold_day=sum(Day))
+
+head(product_sold_Day)
+
+plot_ly(product_sold_Day, x=~Day, y=~Product_sold_day, type='scatter', mode='lines+markers')%>%layout(title='Total Product Sold Per Day',yaxis=list(title='Total Item Sold'))
+
+```
+
+```{r}
+# TOTAL SALES PRICE PER YEAR
+sales_price_Year<-sales_data%>%group_by(Year)%>%summarise(Sales_value_year=sum(item_price*item_cnt_day))
+
+sales_price_Year
+
+plot_ly(sales_price_Year, x=~Year, y=~Sales_value_year, color = ~Year, colors = c("#764AF1","#9772FB","#F2F2F2"), type='bar')%>% layout(title='Total Sales Value Per Year', yaxis=list(title='Total Sales Value'))
+
+```
+
+```{r}
+# TOTAL SALES PER MONTH
+sales_price_Month<-sales_data%>%group_by(Month)%>%summarise(Sales_value_month=sum(item_price*item_cnt_day))
+
+head(sales_price_Month)
+
+plot_ly(sales_price_Month, x=~Month, y=~Sales_value_month, type='scatter', mode='lines+markers')%>%layout(title='Total Sales Value Per Month', yaxis=list(title='Total Sales Value'))
+
+```
+
+```{r}
+#TOTAL SALES PER DAY
+sales_price_Day<-sales_data%>%group_by(Day)%>%summarise(Sales_value_day=sum(item_price*item_cnt_day))
+
+head(sales_price_Day)
+
+plot_ly(sales_price_Day, x=~Day, y=~Sales_value_day, type='scatter', mode='lines+markers')%>%layout(title='Total Sales Value Per Day', yaxis=list(title='Total Sales Value'))
+
+```
+
+```{r}
+# Total Sales Value from January 2013 to October 2015
+TSalaesJanuary_2013_October_2015<-sales_data%>%group_by(date_block_num)%>%summarise(TSales_value_J_O = sum(item_price*item_cnt_day))
+
+head(TSalaesJanuary_2013_October_2015)
+plot_ly(TSalaesJanuary_2013_October_2015, x=~date_block_num, y=~TSales_value_J_O, type='scatter', mode='lines+markers')%>%layout(title='Total Sales From January 2013 to October 2015', yaxis=list(title='Total Sales Value'), xaxis=list(title='Date Block Num'))
+
+```
+
+```{r}
+# Average Sales Value from January 2013 to October 2015
+MSalaesJanuary_2013_October_2015<-sales_data%>%group_by(date_block_num)%>%summarise(MSales_value_J_O = mean(item_price*item_cnt_day))
+
+head(MSalaesJanuary_2013_October_2015)
+
+plot_ly(MSalaesJanuary_2013_October_2015, x=~date_block_num, y=~MSales_value_J_O, type='scatter', mode='lines+markers')%>%layout(title='Average Sales From January 2013 to October 2015', yaxis=list(title='Average Sales Value'), xaxis=list(title='Date Block Num'))
+
+```
+
+```{r}
+#HIGHEST Item Name Count by QUANTITY
+Item_qty<-sales_data%>%group_by(item_name)%>%summarise(Number=length(item_cnt_day))%>%top_n(6)
+
+head(Item_qty)
+
+plot_ly(Item_qty, y=~ item_name, x=~Number, type='bar')%>%layout(title='Count of Item Name by QTY', yaxis=list(title='Count'), xaxis=list(title='Item Name'))%>%layout(yaxis = list(categoryorder = "total ascending"))
+
+```
+
+```{r}
+# SALES PRICE POPULAR ITEMS
+popular_itm_sp<-sales_data%>%group_by(item_name)%>%summarise(Most_p_i_sp=sum(item_price*item_cnt_day))%>%top_n(10) 
+
+popular_itm_sp
+
+plot_ly(popular_itm_sp, x=~Most_p_i_sp, y=~item_name, type='bar')%>%layout(yaxis = list(categoryorder = "total ascending"))%>%layout(title='Popular Item Name by Sales Price', yaxis=list(title='Item Name'), xaxis=list(title='Sales Price'))
+
+```
+
+```{r}
+# POPULAR ITEM BY SALES PRICE
+popular_itc_sp<-sales_data%>%group_by(item_category_name)%>%summarise(Most_p_ic_sp=sum(item_price*item_cnt_day))%>%top_n(10)
+
+head(popular_itc_sp)
+
+plot_ly(popular_itc_sp, x=~Most_p_ic_sp, y=~item_category_name, color = ~ item_category_name, colors = c("#5463FF","#ECECEC","#FFC300","#FF1818","#D82148"),type='bar')%>%layout(yaxis = list(categoryorder = "total ascending"))%>%layout(title='Item Category by QTY', yaxis=list(title='Item Category Name'), xaxis=list(title='Sales Price'))
+```
+
+```{r}
+# FAMOUS SHOP BY QUANTITY
+productive_shop_QTY<-sales_data%>%group_by(shop_name)%>%summarise(Shop_QTY = length(item_cnt_day))%>%top_n(10)
+
+head(productive_shop_QTY)
+
+plot_ly(productive_shop_QTY, x=~Shop_QTY, y=~shop_name, color = ~ shop_name, colors = c("#D3ECA7","#A1B57D","#B33030","#19282F","#FFE162","#F90716","#FF0075","#00A19D","#FF95C5","#7D1935"),type='bar')%>%layout(yaxis = list(categoryorder = "total ascending"))%>%layout(title='Shop Name by QTY', yaxis=list(title='Shop Name'), xaxis=list(title='Item QTY'))
+```
+
+```{r}
+# MAXIMUM AND MINIMUM NUMBER OF SALES PRICE 2013 AND 2014
+sales_data_2013_2014<-subset(sales_data, sales_data$Year==2013 | sales_data$Year==2014)
+
+sales_data_2013_2014%>%group_by(Year)%>%summarise(Max_sales_price_2013_2014=max(item_price*item_cnt_day))
+
+sales_data_2013_2014%>%group_by(Year)%>%summarise(Min_sales_price_2013_2014=min(item_price*item_cnt_day))
+```
+
+```{r}
+# MODEL
+# TRAINING MODEL
+train <-sales_data%>%group_by(Year,Month)%>%mutate(sold_qties=mean(item_cnt_day,na.rm=TRUE))%>%arrange(desc(sold_qties))%>%ungroup()
+
+train <-train%>%select(date_block_num,shop_id,item_id,item_price,item_category_id,sold_qties)
+
+item_data <-sales_data%>%group_by(item_id)%>%summarise(item_price,shop_id,item_category_id)
+
+item_data <-distinct(item_data)
+train
+```
+
+```{r}
+test = merge(test, items[,c("item_id", "item_category_id")], by = "item_id", all.x = T)
+
+test = merge(test, item_data[,c("shop_id","item_id", "item_price")], by.x = c("shop_id", "item_id"),by.y = c("shop_id", "item_id"), all.x = T)
+
+head(test)
+```
+
+```{r}
+test <-test%>%group_by(ID,shop_id,item_id,item_category_id)%>%summarise(item_price=mean(item_price))
+
+head(test)
+```
+
+```{r}
+miss <-colSums(is.na(test))
+
+test$item_price[is.na(test$item_price)] <- mean(test$item_price, na.rm = TRUE)
+```
+
+```{r}
+# MODEL
+model<-lm(sold_qties~shop_id + item_id + item_price + item_category_id, data=train)
+
+summary(model)
+```
+
+```{r}
+plot(model)
+
+```
+
+```{r}
+res<-residuals(model)
+
+res_data<-as.data.frame(res)
+
+head(res_data)
+```
+
+```{r}
+predict<-predict(model, test[,c("ID","shop_id","item_id","item_category_id", "item_price")])
+
+predict
+```
+
+```{r}
+submission <- data.frame(ID = test$ID,item_cnt_month = predict)
+
+head(submission)
+```

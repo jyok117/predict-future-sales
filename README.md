@@ -1,7 +1,7 @@
 # Predict Future Sales
 **CS 636 Data Analytics with R Programming : Predict Future Sales**
 
-[Code Link](https://jyok117.github.io/predict-future-sales/code.html)
+[kaggle Link](https://www.kaggle.com/competitions/competitive-data-science-predict-future-sales)
 
 This project focuses on predicting future sales using a dataset from a Kaggle competition. The dataset includes historical sales data from a Russian software company, and the goal is to forecast total sales for every product and store in the next month.
 
